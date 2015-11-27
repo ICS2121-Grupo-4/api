@@ -10,8 +10,9 @@ import re
 import parser
 
 # Without trailing slash
-MODELS_FOLDER = "../models"
-MOVIES_DAT_FILE = "../movies-dataset/ml-1m/movies.dat"
+MODELS_FOLDER = os.path.join(os.path.dirname(__file__), "../models")
+MOVIES_DAT_FILE = os.path.join(
+    os.path.dirname(__file__), "../movies-dataset/ml-1m/movies.dat")
 
 
 class API:
