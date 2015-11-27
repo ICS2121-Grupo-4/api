@@ -1,0 +1,37 @@
+doctype
+html.no-js
+    head
+        meta(charset='utf-8')
+        meta(http-equiv='X-UA-Compatible', content='IE=edge')
+        title LassoLovers <3
+        meta(name='description', content='')
+        meta(name='viewport', content='width=device-width, initial-scale=1')
+        link(rel='stylesheet', href='static/css/bootstrap.css')
+        link(rel='stylesheet', href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css")
+        link(rel='stylesheet', href='static/css/main.css')
+    body
+        .container
+            h1.col-md-12 LassoLovers
+        hr
+
+        .container
+            h3.col-md-12 Dinos si te gustan o no estas películas.
+
+            .row
+                div.col-md-2.col-md-offset-2
+                    a#dislike(href="#")
+                        i.fa.fa-times.fa-5x
+                div#image-container.col-md-3(data-current-movie="")
+                div.col-md-2
+                    a#like(href="#")
+                        i.fa.fa-check.fa-5x
+
+            h3.col-md-12 Nuestras predicciones son:
+
+            div.peliculas_predichas
+                .row
+                    div.col-md-2.col-md-offset2
+
+
+        script(src="https://code.jquery.com/jquery-1.11.3.min.js")
+        script(src="static/js/main.js")
