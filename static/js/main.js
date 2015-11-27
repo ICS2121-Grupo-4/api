@@ -48,6 +48,17 @@ $(document).ready(function() {
                     $("#image-container").data("current-movie-id", data.movie_id);
                 }
             });
+        },
+        displayLoader = function() {
+            var target = $(".peliculas_predichas").find(".row"),
+                h3Wrapper = $("<h3 />").text("Calculando...").addClass("col-md-6 col-md-offset-3"),
+                loader = $("<img />").attr("src", "static/i/loading.svg").css({height: "16px", width: "32px"});
+            h3Wrapper.prepend(loader);
+            target.empty();
+            h3Wrapper.appendTo(target);
+        },
+        hideLoader = function() {
+
         };
 
     loadRandomMovie();
@@ -59,6 +70,12 @@ $(document).ready(function() {
 
         $.ajax({
             url: buildRequestUrl(),
+            beforeSend: function() {
+                displayLoader();
+            },
+            complete: function() {
+                hideLoader();
+            },
             success: function(data) {
                 handlePredictions(data);
             }
@@ -73,6 +90,12 @@ $(document).ready(function() {
 
         $.ajax({
             url: buildRequestUrl(),
+            beforeSend: function() {
+                displayLoader();
+            },
+            complete: function() {
+                hideLoader();
+            },
             success: function(data) {
                 handlePredictions(data);
             }
