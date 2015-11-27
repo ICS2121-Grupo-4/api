@@ -20,7 +20,7 @@ class API:
         self.port = port
 
         self.movies = parser.MoviesParser(MOVIES_DAT_FILE).parse()
-        self.models = {}
+        self.models = []
 
         self.app.jinja_env.add_extension("pyjade.ext.jinja.PyJadeExtension")
 
@@ -56,10 +56,15 @@ class API:
             scores = {}
             # Calcular predicción para todas las películas (descartando las
             # evaluadas).
-            models_to_evaluate = {model_id: model
-                                  for model_id, model in self.models.items()
-                                  if model_id not in raw_movies}
-            for model_id, model in models_to_evaluate.items():
+            models_to_evaluate = [model_id for model_id in self.models
+                                  if model_id not in raw_movies]
+            for model_id in models_to_evaluate:
+                with open(
+                    "{}/{}.model".format(MODELS_FOLDER, model_id - 1),
+                    "rb"
+                ) as model_file:
+                    model = pickle.load(model_file)
+
                 # Borrar componente de la película que se va a evaluar.
                 particular_user_vector = np.delete(
                     user_vector,
@@ -156,8 +161,8 @@ class API:
         for model_id in range(self.MAX_MODEL_ID):
             try:
                 filename = "{}/{}.model".format(MODELS_FOLDER, model_id)
-                with open(filename, "rb") as model_file:
-                    self.models[model_id + 1] = pickle.load(model_file)
+                if os.path.isfile(filename):
+                    self.models.append(model_id + 1)
             except FileNotFoundError:
                 pass
 
