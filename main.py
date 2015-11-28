@@ -16,9 +16,10 @@ MOVIES_DAT_FILE = os.path.join(
 
 
 class API:
-    def __init__(self, port):
+    def __init__(self, port, env):
         self.app = Flask(__name__)
         self.port = port
+        self.env = env
 
         self.movies = parser.MoviesParser(MOVIES_DAT_FILE).parse()
         self.models = []
@@ -103,7 +104,8 @@ class API:
 
             return jsonify(res)
 
-        self.app.run(port=self.port, debug=True)
+        debug = self.env == "DEV"
+        self.app.run(port=self.port, debug=debug)
 
     def get_title_by_id(self, movie_id):
         return list(filter(
@@ -169,5 +171,7 @@ class API:
 
 
 if __name__ == '__main__':
-    api = API(1313)
+    port = int(os.getenv("PORT", default=1313))
+    env = os.getenv("ENV", default="DEV")
+    api = API(port, env)
     api.run()
