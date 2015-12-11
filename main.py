@@ -10,7 +10,8 @@ import re
 import parser
 
 # Without trailing slash
-MODELS_FOLDER = os.path.join(os.path.dirname(__file__), "../models")
+MODELS_MATRIX_PATH = os.path.join(
+    os.path.dirname(__file__), "../MODELS.matrix")
 MOVIES_DAT_FILE = os.path.join(
     os.path.dirname(__file__), "../movies-dataset/ml-1m/movies.dat")
 
@@ -26,7 +27,6 @@ class API:
 
         self.app.jinja_env.add_extension("pyjade.ext.jinja.PyJadeExtension")
 
-        self.calculate_model_dimensions()
         self.load_models()
 
     def run(self):
@@ -51,42 +51,25 @@ class API:
             raw_movies = list(map(int, request.args.get("movies").split(",")))
             raw_ratings = map(int, request.args.get("ratings").split(","))
             # Vector de ceros.
-            user_vector = np.zeros(self.NUM_ENTRIES + 1)
+            user_vector = np.zeros(self.NUM_MODELS)
             # Reemplazar valores del usuario en vector de ceros.
             for movie_id, rating in zip(raw_movies, raw_ratings):
                 user_vector[movie_id - 1] = rating
-            scores = {}
-            # Calcular predicción para todas las películas (descartando las
-            # evaluadas).
-            models_to_evaluate = [model_id for model_id in self.models
-                                  if model_id not in raw_movies]
-            for model_id in models_to_evaluate:
-                with open(
-                    "{}/{}.model".format(MODELS_FOLDER, model_id - 1),
-                    "rb"
-                ) as model_file:
-                    model = pickle.load(model_file)
-
-                # Borrar componente de la película que se va a evaluar.
-                particular_user_vector = np.delete(
-                    user_vector,
-                    model_id - 1,
-                    axis=0
-                )
-                scores[model_id] = model.coef_.T.dot(particular_user_vector)
+            scores = self.models.dot(user_vector).T
             # Obtener mejores 5 puntajes.
             scores_sorted = sorted(
-                list(scores.items()),
+                list(enumerate(scores)),
                 key=lambda s: s[1],
                 reverse=True
             )
             results = scores_sorted[:4]
             res = {}
             for movie_id, score in results:
+                movie_id = movie_id + 1
                 title = self.get_title_by_id(movie_id).title
                 res[movie_id] = {}
                 res[movie_id]["title"] = title
-                res[movie_id]["score"] = score
+                res[movie_id]["score"] = score.item(0)
                 # TODO: Cache movie posters.
                 res[movie_id]["image"] = self.get_movie_poster(title)
 
@@ -108,10 +91,13 @@ class API:
         self.app.run(port=self.port, debug=debug)
 
     def get_title_by_id(self, movie_id):
-        return list(filter(
-            lambda movie: movie.movie_id == movie_id,
-            self.movies
-        ))[0]
+        try:
+            return list(filter(
+                lambda movie: movie.movie_id == movie_id,
+                self.movies
+            ))[0]
+        except IndexError:
+            print(movie_id)
 
     def get_movie_poster(self, title):
         # print(title)
@@ -134,40 +120,10 @@ class API:
         return "https://thetreasurehunteruk.files.wordpress.com/2011/10" +\
                "/rick-new2.jpg"
 
-    def calculate_model_dimensions(self):
-        # Number of entries per vector
-        # TODO: Loop infinito si es que no existen modelos.
-        model_id = 0
-        not_finished = True
-        while not_finished:
-            filename = "{}/{}.model".format(MODELS_FOLDER, model_id)
-            try:
-                with open(filename, "rb") as model_file:
-                    model = pickle.load(model_file)
-                    self.NUM_ENTRIES = len(model.coef_)
-                    not_finished = False
-            except FileNotFoundError:
-                model_id += 1
-        # Number of models
-        models_files_unfiltered = os.listdir(MODELS_FOLDER)
-        models_files = list(filter(
-            lambda p: re.match(".*\.model$", p),
-            models_files_unfiltered
-        ))
-        self.MAX_MODEL_ID = max(map(
-            lambda p: int(p.split(".")[0]),
-            models_files
-        ))
-        self.NUM_MODELS = len(list(models_files))
-
     def load_models(self):
-        for model_id in range(self.MAX_MODEL_ID):
-            try:
-                filename = "{}/{}.model".format(MODELS_FOLDER, model_id)
-                if os.path.isfile(filename):
-                    self.models.append(model_id + 1)
-            except FileNotFoundError:
-                pass
+        with open(MODELS_MATRIX_PATH, "rb") as models_matrix_file:
+            self.models = pickle.load(models_matrix_file)
+        self.NUM_MODELS = np.shape(self.models)[0]
 
 
 if __name__ == '__main__':
